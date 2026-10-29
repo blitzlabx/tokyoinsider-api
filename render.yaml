@@ -1,0 +1,27 @@
+# Blitz TokyoInsider Scraper API — Render Blueprint
+# Author: Blitz (@blitzlabx)
+# https://github.com/blitzlabx/tokyoinsider-api
+#
+# Deploy: Connect this repo in Render Dashboard → New → Blueprint
+# Or:    render blueprint launch
+
+services:
+  - type: web
+    name: blitz-tokyoinsider-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: TI_MIN_INTERVAL
+        value: "0.4"
+      - key: TI_CACHE_TTL
+        value: "300"
+      # Optional: point at a FlareSolverr instance you host elsewhere
+      # - key: TI_FLARESOLVERR_URL
+      #   value: https://your-flaresolverr.example.com
+      # Optional proxy
+      # - key: TI_PROXY
+      #   sync: false
