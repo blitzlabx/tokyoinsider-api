@@ -103,6 +103,74 @@ You can also put both services in a `docker-compose.yml` (see below).
 
 ---
 
+## Deploy
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Docker** | ✅ Recommended | `Dockerfile` + `docker-compose.yml` (API + FlareSolverr) |
+| **Render** | ✅ Recommended | `render.yaml` Blueprint — free tier works |
+| **Vercel** | ⚠️ Experimental | `vercel.json` + `api/index.py` — native deps (`curl_cffi`, `lxml`) may fail to build |
+| **Cloudflare Workers** | ⚠️ Proxy only | Full Python scraper cannot run in Workers. Use the included edge proxy, or Cloudflare Containers |
+| **Railway / Fly / others** | ✅ | Use the Dockerfile or `Procfile` |
+
+### Docker (local or any VPS)
+
+```bash
+# API only
+docker build -t blitz-ti-api .
+docker run -p 8000:8000 -e TI_FLARESOLVERR_URL=http://host.docker.internal:8191 blitz-ti-api
+
+# API + FlareSolverr together
+docker compose up -d
+```
+
+### Render
+
+1. Push this repo to GitHub (already done: [blitzlabx/tokyoinsider-api](https://github.com/blitzlabx/tokyoinsider-api)).
+2. In [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**.
+3. Select the repo — `render.yaml` is detected automatically.
+4. (Optional) Add env `TI_FLARESOLVERR_URL` pointing at a FlareSolverr you host elsewhere.
+
+Or create a **Web Service** manually:
+- Runtime: **Docker**
+- Dockerfile path: `./Dockerfile`
+- Health check: `/health`
+
+### Vercel
+
+```bash
+npm i -g vercel
+vercel
+```
+
+Uses `vercel.json` + `api/index.py`.  
+**Warning:** `curl_cffi` and `lxml` often fail on Vercel’s serverless Python builders. Prefer Render or Docker for production.
+
+### Cloudflare Workers (edge proxy)
+
+Workers **cannot** run this FastAPI + scraper stack. The `cloudflare/` folder is a thin proxy:
+
+```bash
+cd cloudflare
+npm install
+# Edit wrangler.toml → set BACKEND_URL to your Render/Docker URL
+npx wrangler deploy
+```
+
+For real compute on Cloudflare, use **Cloudflare Containers** with the existing `Dockerfile`.
+
+### Environment variables (all platforms)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | Auto on most hosts | Server port (default `8000`) |
+| `TI_FLARESOLVERR_URL` | Recommended | FlareSolverr base URL for Cloudflare bypass |
+| `TI_MIN_INTERVAL` | Optional | Delay between upstream requests (default `0.35`) |
+| `TI_PROXY` | Optional | HTTP/S proxy |
+| `TI_BASE_URL` | Optional | Override primary TokyoInsider origin |
+
+---
+
 ## Environment Variables
 
 All settings use the `TI_` prefix. See `.env.example`.
@@ -203,8 +271,6 @@ JSON response
 ## Docker Compose (API + FlareSolverr)
 
 ```yaml
-version: "3.8"
-
 services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
@@ -225,8 +291,6 @@ services:
       - flaresolverr
     restart: unless-stopped
 ```
-
-Save as `docker-compose.yml` and run:
 
 ```bash
 docker compose up -d
@@ -264,23 +328,16 @@ python -m pytest tests/ -q
 
 ```
 tokyoinsider-api/
-├── app/
-│   ├── main.py          # FastAPI app + Blitz branding
-│   ├── config.py        # Settings (TI_* env vars)
-│   ├── fetch.py         # HTTP client + FlareSolverr
-│   ├── crypto.py        # Link cipher (ROT13 / reverse / b64 / XOR)
-│   ├── parse.py         # HTML parsers
-│   ├── catalog.py       # Autocomplete index + fuzzy search
-│   ├── cache.py         # Async TTL cache
-│   ├── models.py        # Pydantic response models
-│   ├── errors.py        # Upstream / decode errors
-│   └── routers/         # Endpoint modules
+├── app/                 # FastAPI app (Blitz branded)
+├── api/                 # Vercel serverless entry
+├── cloudflare/          # CF Worker edge proxy
 ├── tests/
-│   └── test_crypto.py
 ├── Dockerfile
-├── run.sh
+├── docker-compose.yml
+├── render.yaml
+├── vercel.json
+├── Procfile
 ├── requirements.txt
-├── .env.example
 ├── LICENSE              # MIT — Copyright (c) 2026 Blitz (@blitzlabx)
 └── README.md
 ```
