@@ -1,0 +1,13 @@
+{
+  "name": "blitz-tokyoinsider-cf-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Edge proxy for Blitz TokyoInsider Scraper API — Author: Blitz (@blitzlabx)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.99.0"
+  }
+}

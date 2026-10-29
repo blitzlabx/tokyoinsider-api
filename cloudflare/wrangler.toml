@@ -1,0 +1,23 @@
+# Blitz TokyoInsider Scraper API — Cloudflare Worker (proxy stub)
+# Author: Blitz (@blitzlabx)
+#
+# IMPORTANT: Cloudflare Workers cannot run the full FastAPI + curl_cffi
+# + BeautifulSoup stack (CPU limits, no native Python scraping libs).
+#
+# This Worker is a thin edge proxy / status page.
+# Point BACKEND_URL at your Render or Docker deployment.
+#
+# Deploy:
+#   cd cloudflare
+#   npx wrangler deploy
+#
+# For full compute on Cloudflare, use Cloudflare Containers (beta)
+# with the existing Dockerfile instead of Workers.
+
+name = "blitz-tokyoinsider-api"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Set this to your real API (Render / Docker / VPS)
+BACKEND_URL = "https://YOUR-RENDER-OR-DOCKER-URL.onrender.com"
